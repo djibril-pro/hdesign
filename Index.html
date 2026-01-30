@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Pro</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 460px;
+      padding: 28px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    .title {
+      font-size: 22px;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.8;
+      margin-bottom: 20px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .card {
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.12);
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+    }
+
+    .revenue {
+      background: linear-gradient(135deg, #00c6ff, #0072ff);
+    }
+
+    .designs {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      color: #111;
+    }
+
+    .level {
+      background: linear-gradient(135deg, #8e2de2, #4a00e0);
+    }
+
+    .total {
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      color: #111;
+    }
+
+    .label {
+      font-size: 12px;
+      opacity: 0.85;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .progress-container {
+      margin-top: 6px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background: white;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .payday {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .action-btn {
+      margin-top: 18px;
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 600;
+      background: white;
+      color: black;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="title">Bonjour Hannatou 👋</div>
+  <div class="subtitle">Voici ton résumé professionnel</div>
+
+  <div class="cards">
+    <div class="card revenue">
+      <div class="label">Revenu actuel</div>
+      <div class="value" id="revenu">-- GNF</div>
+    </div>
+
+    <div class="card designs">
+      <div class="label">Designs réalisés</div>
+      <div class="value" id="designs">--</div>
+    </div>
+
+    <div class="card level">
+      <div class="label">Niveau</div>
+      <div class="value" id="niveau">--</div>
+    </div>
+
+    <div class="card total">
+      <div class="label">Total cumulé</div>
+      <div class="value" id="total">-- GNF</div>
+    </div>
+
+    <div class="card full">
+      <div class="label">Objectif mensuel (16 designs)</div>
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress" id="progress"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="payday" id="payday">Jour de paie dans -- jours 💰</div>
+
+  <button class="action-btn" onclick="loadData()">Actualiser</button>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbzpZ6X8QvZQ6uyfYUcwElVWXRkyqSXrVkM-NCXezMHfaXRvLZfkUME9YFMw_Z6hcbggfw/exec";
+
+  const OBJECTIF = 16;
+  const PRIX_PAR_DESIGN = 5000;
+  const JOUR_DE_PAIE = 5; // Vendredi (0 = dimanche)
+
+  function getNiveau(nb) {
+    if (nb < 5) return "Débutante";
+    if (nb < 10) return "Junior";
+    if (nb < 16) return "Confirmée";
+    return "Pro";
+  }
+
+function joursAvantPaie() {
+  const today = new Date();
+
+  // Prochain 1er du mois
+  let payDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // Si on a déjà dépassé le 1er, on prend le mois suivant
+  if (today.getDate() > 1) {
+    payDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  }
+
+  const diffTime = payDate - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays;
+}
+
+
+  function loadData() {
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        const designs = Number(data.nbDesign);
+        const revenu = designs * PRIX_PAR_DESIGN;
+        const total = revenu; // cumul simple (extensible plus tard)
+
+        document.getElementById("designs").innerText = designs;
+        document.getElementById("revenu").innerText = revenu + " GNF";
+        document.getElementById("total").innerText = total + " GNF";
+        document.getElementById("niveau").innerText = getNiveau(designs);
+
+        const progress = Math.min((designs / OBJECTIF) * 100, 100);
+        document.getElementById("progress").style.width = progress + "%";
+
+        document.getElementById("payday").innerText =
+          `Jour de paie dans ${joursAvantPaie()} jours 💰`;
+      });
+  }
+
+  loadData();
+</script>
+
+</body>
+</html>
